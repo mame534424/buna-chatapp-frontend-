@@ -1,0 +1,6 @@
+import API from "../utils/axiosInstance";
+
+export const signup = (data) => API.post("/auth/signup", data);
+export const verifyCode = (data) => API.post("/auth/verifycode", data);
+export const resendCode = (data) => API.post("/auth/resendcode", data);
+export const login = (data) => API.post("/auth/login", data);
