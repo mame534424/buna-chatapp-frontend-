@@ -47,9 +47,9 @@ export default function Login() {
               Email Address
             </label>
             <input
-              placeholder="Enter your email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="Enter your username"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
               className="w-full px-4 py-3 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-brown-900 focus:border-transparent bg-amber-50 transition-all duration-200"
               required
             />
