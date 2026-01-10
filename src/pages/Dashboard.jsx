@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import API from "../chatapp-frontend/src/utils/axiosInstance";
-import { useAuth } from "../chatapp-frontend/src/context/AuthContext";
-import { useWebSocket } from "../chatapp-frontend/src/context/WebSocketProvider";
-import { getAllUsers, getCurrentUser } from "../chatapp-frontend/src/api/userApi";
+import API from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
+import { useWebSocket } from "../context/WebSocketProvider";
+import { getAllUsers, getCurrentUser } from "../api/userApi";
 
 export default function Dashboard() {
   const { user } = useAuth(); // user ID from /users/me
@@ -70,14 +70,22 @@ export default function Dashboard() {
       console.error("Failed to fetch messages:", err);
     }
   };
-console.log("Messages received:", messages.map(m => m.createdAt));
-const sortedMessages = [...messages].sort(
-  (a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
+  console.log(
+    "Messages received:",
+    messages.map((m) => m.createdAt)
+  );
+  const sortedMessages = [...messages].sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+  );
 
   /** Send message */
   const sendMessage = () => {
-    if (!messageInput.trim() || !selectedConversation || !stompClient?.connected) return;
+    if (
+      !messageInput.trim() ||
+      !selectedConversation ||
+      !stompClient?.connected
+    )
+      return;
 
     const payload = {
       conversationId: selectedConversation.id,
@@ -92,36 +100,36 @@ const sortedMessages = [...messages].sort(
 
     setMessageInput("");
   };
-useEffect(() => {
-  if (!stompClient || !connected || !currentUserId) return;
+  useEffect(() => {
+    if (!stompClient || !connected || !currentUserId) return;
 
-  const subscription = stompClient.subscribe(
-    `/topic/users/${currentUserId}/conversations`, // Note: backend sends to this topic for conversation updates
-    (msg) => {
-      try {
-        const message = JSON.parse(msg.body);
+    const subscription = stompClient.subscribe(
+      `/topic/users/${currentUserId}/conversations`, // Note: backend sends to this topic for conversation updates
+      (msg) => {
+        try {
+          const message = JSON.parse(msg.body);
 
-        // If the message belongs to the selected conversation, append to chat window
-        if (selectedConversation?.id === message.conversationId) {
-          setMessages((prev) => [...prev, message]);
+          // If the message belongs to the selected conversation, append to chat window
+          if (selectedConversation?.id === message.conversationId) {
+            setMessages((prev) => [...prev, message]);
+          }
+
+          // Update lastMessage in conversation list
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === message.conversationId
+                ? { ...c, lastMessage: message }
+                : c
+            )
+          );
+        } catch (err) {
+          console.error("Failed to parse WebSocket message:", err);
         }
-
-        // Update lastMessage in conversation list
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === message.conversationId ? { ...c, lastMessage: message } : c
-          )
-        );
-      } catch (err) {
-        console.error("Failed to parse WebSocket message:", err);
       }
-    }
-  );
+    );
 
-  return () => subscription.unsubscribe();
-}, [stompClient, connected, currentUserId, selectedConversation]);
-
-
+    return () => subscription.unsubscribe();
+  }, [stompClient, connected, currentUserId, selectedConversation]);
 
   /** Create private conversation */
   const createPrivateConversation = async (otherUserId) => {
@@ -139,29 +147,27 @@ useEffect(() => {
   };
 
   const createGroupConversation = async () => {
-  if (!groupName || groupParticipants.length === 0 || !currentUserId) return;
+    if (!groupName || groupParticipants.length === 0 || !currentUserId) return;
 
-  try {
-    // Send groupName as query param and participantIds as body
-    const res = await API.post(
-      `/conversations/group?groupName=${encodeURIComponent(groupName)}`,
-      groupParticipants
-    );
+    try {
+      // Send groupName as query param and participantIds as body
+      const res = await API.post(
+        `/conversations/group?groupName=${encodeURIComponent(groupName)}`,
+        groupParticipants
+      );
 
-    // Update conversation list and select new conversation
-    fetchConversations();
-    setSelectedConversation(res.data.data);
-    fetchMessages(res.data.data.id);
+      // Update conversation list and select new conversation
+      fetchConversations();
+      setSelectedConversation(res.data.data);
+      fetchMessages(res.data.data.id);
 
-    // Reset inputs
-    setGroupName("");
-    setGroupParticipants([]);
-  } catch (err) {
-    console.error("Failed to create group:", err);
-  }
-};
-
-
+      // Reset inputs
+      setGroupName("");
+      setGroupParticipants([]);
+    } catch (err) {
+      console.error("Failed to create group:", err);
+    }
+  };
 
   /** Initial fetch of conversations */
   useEffect(() => {
@@ -237,42 +243,43 @@ useEffect(() => {
           </div>
 
           {/* Create Group */}
-<div className="mt-6">
-  <h2 className="font-bold text-lg">Create Group</h2>
-  <input
-    type="text"
-    placeholder="Group Name"
-    className="w-full p-2 border rounded mt-2"
-    value={groupName}
-    onChange={(e) => setGroupName(e.target.value)}
-  />
-  <select
-    multiple
-    className="w-full p-2 border rounded mt-2 h-24"
-    value={groupParticipants}
-    onChange={(e) => {
-      // Convert selected options to numbers (user IDs)
-      const selected = Array.from(e.target.selectedOptions, (opt) => Number(opt.value));
-      setGroupParticipants(selected);
-    }}
-  >
-    {users
-      .filter((u) => u.id !== currentUserId)
-      .map((u) => (
-        <option key={u.id} value={u.id}>
-          {u.username || u.email || `User ${u.id}`}
-        </option>
-      ))}
-  </select>
-  <button
-    className="w-full mt-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-    onClick={createGroupConversation}
-    disabled={!groupName || groupParticipants.length === 0}
-  >
-    Create Group
-  </button>
-</div>
-
+          <div className="mt-6">
+            <h2 className="font-bold text-lg">Create Group</h2>
+            <input
+              type="text"
+              placeholder="Group Name"
+              className="w-full p-2 border rounded mt-2"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+            />
+            <select
+              multiple
+              className="w-full p-2 border rounded mt-2 h-24"
+              value={groupParticipants}
+              onChange={(e) => {
+                // Convert selected options to numbers (user IDs)
+                const selected = Array.from(e.target.selectedOptions, (opt) =>
+                  Number(opt.value)
+                );
+                setGroupParticipants(selected);
+              }}
+            >
+              {users
+                .filter((u) => u.id !== currentUserId)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.username || u.email || `User ${u.id}`}
+                  </option>
+                ))}
+            </select>
+            <button
+              className="w-full mt-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+              onClick={createGroupConversation}
+              disabled={!groupName || groupParticipants.length === 0}
+            >
+              Create Group
+            </button>
+          </div>
         </div>
       </div>
       {/* Chat Window */}
@@ -300,10 +307,13 @@ useEffect(() => {
                 >
                   <div className="mb-1">{m.text || m.content}</div>
                   <div className="text-xs opacity-75">
-                    {new Date(m.timestamp || m.createdAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {new Date(m.timestamp || m.createdAt).toLocaleTimeString(
+                      [],
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
                   </div>
                 </div>
               ))}

@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Signup from "./pages/SignupPage";
 import Login from "./pages/LoginPage";
 import Verify from "./pages/VerifyPage";
-import Dashboard from "../../Classes (1h 4 min)/Dashboard1";
+import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { WebSocketProvider } from "./context/WebSocketProvider";
@@ -38,16 +38,15 @@ export default function App() {
           <Route path="/verify" element={<Verify />} />
 
           <Route
-    path="/dashboard"
-    element={
-      <PrivateRoute>
-        <WebSocketProvider>
-          <Dashboard />
-        </WebSocketProvider>
-      </PrivateRoute>
-    }
-        />
-
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <WebSocketProvider>
+                  <Dashboard />
+                </WebSocketProvider>
+              </PrivateRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
