@@ -7,7 +7,7 @@ import { Coffee, LogIn } from "lucide-react";
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ userName: "", password: "" });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -44,12 +44,12 @@ export default function Login() {
           <div>
             <label className="block text-sm font-semibold text-brown-900 mb-2 flex items-center">
               <span className="bg-amber-100 p-1 rounded mr-2">☕</span>
-              Email Address
+              Username
             </label>
             <input
               placeholder="Enter your username"
               value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              onChange={(e) => setForm({ ...form, userName: e.target.value })}
               className="w-full px-4 py-3 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-brown-900 focus:border-transparent bg-amber-50 transition-all duration-200"
               required
             />

@@ -10,6 +10,9 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+  define: {
+    global: "window", // Polyfill `global` as `window`
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
