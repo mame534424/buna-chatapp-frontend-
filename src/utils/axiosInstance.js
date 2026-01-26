@@ -5,7 +5,7 @@ const API = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Add JWT token automatically for protected routes
+// Add JWT token automatically
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) { 

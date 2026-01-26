@@ -21,7 +21,8 @@ const VerifyPage = () => {
       toast.success("Account verified!");
       navigate("/login");
     } catch (err) {
-      toast.error(err.response?.data || "Verification failed");
+      const errorMessage = err.response.data.errors[0]; 
+      toast.error(errorMessage);
     }
   };
 
@@ -30,7 +31,8 @@ const VerifyPage = () => {
       await resendCode({ email: state?.email });
       toast.success("Verification code resent!");
     } catch (err) {
-      toast.error(err.response?.data || "Resend failed");
+      const errorMessage = err.response.data.errors[0]; 
+      toast.error(errorMessage);
     }
   };
 

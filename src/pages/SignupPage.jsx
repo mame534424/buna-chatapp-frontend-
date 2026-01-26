@@ -14,7 +14,8 @@ const SignupPage = () => {
       toast.success("Signup successful! Check email for verification code.");
       navigate("/verify", { state: { email: data.email } });
     } catch (err) {
-      toast.error(err.response?.data || "Signup failed");
+      const errorMessage = err.response.data.errors[0]; 
+      toast.error(errorMessage);
     }
   };
 

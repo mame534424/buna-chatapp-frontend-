@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Coffee, LogIn } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function Login() {
   const { login } = useAuth();
@@ -17,7 +18,8 @@ export default function Login() {
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
-      alert("Login failed! Check your credentials.");
+      const errorMessage = err.response.data.errors[0]; 
+      toast.error(errorMessage);
     }
   };
 
@@ -104,29 +106,9 @@ export default function Login() {
             </p>
           </div>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-amber-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-brown-700">Or continue with</span>
-            </div>
-          </div>
+          
 
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              className="py-2 px-4 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors text-brown-700"
-            >
-              Google
-            </button>
-            <button
-              type="button"
-              className="py-2 px-4 border border-amber-200 rounded-lg hover:bg-amber-50 transition-colors text-brown-700"
-            >
-              GitHub
-            </button>
-          </div>
+          
         </form>
       </div>
 

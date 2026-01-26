@@ -1,63 +1,152 @@
-import { useEffect, useState } from "react";
-import API from "../api/axiosInstance";
+import React, { useMemo } from "react";
+import { useState } from "react";
+import { set } from "react-hook-form";
+import { Coffee, LogIn } from "lucide-react";
+import AddParticipantsModal from "../components/AddParticipantsModal";
 
-const ChatWindow = ({ conversation }) => {
-  const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
 
-  const fetchMessages = async () => {
-    try {
-      const res = await API.get(`/messages/conversation/${conversation.id}`);
-      setMessages(res.data.data.content);
-    } catch (err) {
-      console.error("Failed to fetch messages:", err);
-    }
+
+export default function ChatWindow({
+  selectedConversation,onParticipantsAdded,
+  currentUserId,
+  messages,
+  messageInput,
+  setMessageInput,
+  sendMessage,messageReads
+}) {
+  // Sort messages safely
+  const [open, setOpen] = useState(false);
+
+  const sortedMessages = useMemo(() => {
+    return [...messages].sort(
+      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+    );
+  }, [messages]);
+
+  // Get sender name (for group chats)
+  const getSenderName = (senderId) => {
+    const user = selectedConversation?.participants?.find(
+      (p) => p.userId === senderId
+    );
+    return user?.username || user?.email || "Unknown";
   };
 
-  useEffect(() => {
-    if (conversation) fetchMessages();
-  }, [conversation]);
+  // Tick logic
+  const isMessageReadBySomeoneElse = (messageId) => {
+  return messageReads.some(
+    (r) => r.messageId === messageId && r.userId !== currentUserId
+  );
+};
 
-  const sendMessage = async () => {
-    if (!text.trim()) return;
-    try {
-      const senderId = localStorage.getItem("userId");
-      const res = await API.post(`/messages/send?conversationId=${conversation.id}&senderId=${senderId}`, text, {
-        headers: { "Content-Type": "text/plain" }
-      });
-      setMessages([...messages, res.data.data]);
-      setText("");
-    } catch (err) {
-      console.error("Failed to send message:", err);
-    }
-  };
+  if (!selectedConversation) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-400">
+        Select a conversation to start chatting
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto border p-2 rounded mb-2">
-        {messages.map((m) => (
-          <div key={m.id} className="mb-2">
-            <strong>{m.senderId}:</strong> {m.content}
+    <div className="flex-1 flex flex-col bg-white">
+      {/* HEADER */}
+      <div className="p-4 border-b font-bold flex items-center justify-between">
+    
+          {/* Conversation Title */}
+          <div>
+            {selectedConversation.group
+              ? selectedConversation.name
+              : selectedConversation.participants
+                  ?.filter((p) => p.userId !== currentUserId)
+                  .map((p) => p.username || p.email)
+                  .join(", ")}
           </div>
-        ))}
+
+            {/* Add Participants (GROUP ONLY) */}
+            {selectedConversation.group && (
+              <button
+                onClick={() => setOpen(true)}
+                className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+              >
+                <span className="text-lg">+</span>
+                <span>Add participants</span>
+              </button>
+            )}
+
       </div>
 
-      <div className="flex">
+      {/* MESSAGES */}
+      <div className="flex-1 p-4 overflow-y-auto flex flex-col space-y-3">
+        {sortedMessages.map((m) => {
+          const isMe = m.senderId === currentUserId;
+
+          return (
+            <div
+              key={m.id}
+              className={`p-3 rounded-lg max-w-[70%] ${
+                isMe
+                  ? "bg-blue-500 text-white self-end"
+                  : "bg-gray-200 text-gray-800 self-start"
+              }`}
+            >
+              {/* Sender name (group chat only, not me) */}
+              {selectedConversation.group && !isMe && (
+                <div className="text-xs font-semibold mb-1 text-gray-600">
+                  {getSenderName(m.senderId)}
+                </div>
+              )}
+
+              {/* Content */}
+              <div>{m.content}</div>
+
+              {/* Time + ticks */}
+              <div className="flex justify-end items-center space-x-1 text-xs opacity-75 mt-1">
+                <span>
+                  {new Date(m.createdAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+                {m.senderId === currentUserId && (
+                <span>
+                  {isMessageReadBySomeoneElse(m.id) ? "✓✓" : "✓"}
+                </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* INPUT */}
+      <div className="p-4 border-t flex space-x-2">
         <input
-          className="flex-1 border p-2 rounded-l"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          type="text"
+          className="flex-1 p-2 border rounded"
+          value={messageInput}
+          onChange={(e) => setMessageInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Type a message..."
         />
         <button
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
           onClick={sendMessage}
-          className="bg-blue-500 text-white p-2 rounded-r hover:bg-blue-600"
+          disabled={!messageInput.trim()}
         >
           Send
         </button>
       </div>
+      <div className="absolute top-10 right-10 opacity-10">
+        <Coffee className="h-32 w-32 text-brown-900 transform rotate-12" />
+      </div>
+      <div className="absolute bottom-10 left-10 opacity-10">
+        <Coffee className="h-24 w-24 text-brown-900 transform -rotate-12" />
+      </div>
+      <AddParticipantsModal
+        isOpen={open}
+        onClose={() => setOpen(false)}
+        conversation={selectedConversation}
+        onParticipantsAdded={onParticipantsAdded}
+      />
     </div>
   );
-};
-
-export default ChatWindow;
+}
