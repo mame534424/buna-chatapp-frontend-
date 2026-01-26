@@ -2,15 +2,14 @@ import API from "../utils/axiosInstance";
 
 export const getCurrentUser = async () => {
   try {
-    // Step 1: Get current user ID
     const { data: userId } = await API.get("/users/me");
     console.log("Current user ID from /users/me:", userId);
 
-    // Step 2: Get all users
+    // Get all users
     const { data: allUsers } = await API.get("/users");
     console.log("All users from /users:", allUsers);
 
-    // Step 3: Find the current user object
+    // Find the current user object
     const user = allUsers.find((u) => u.id === userId);
     console.log("Current user object:", user);
 
@@ -26,3 +25,13 @@ export const getCurrentUser = async () => {
 };
 
 export const getAllUsers = () => API.get("/users");
+
+export const searchUsers = async (query) => {
+  if (!query.trim()) return [];
+
+  const { data } = await API.get("/users/search", {
+    params: { query },
+  });
+
+  return data;
+};

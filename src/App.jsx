@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import Signup from "./pages/SignupPage";
 import Login from "./pages/LoginPage";
 import Verify from "./pages/VerifyPage";
+import ForgotPassword from "./pages/ForgotPassword";
+import NewPasswordPage from "./pages/NewPasswordPage";
 import Dashboard from "./pages/Dashboard";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -35,6 +37,8 @@ export default function App() {
 
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/new-password" element={<NewPasswordPage />} />
           <Route path="/verify" element={<Verify />} />
 
           <Route

@@ -4,10 +4,31 @@
   import { useWebSocket } from "../context/WebSocketProvider";
   import { getAllUsers, getCurrentUser } from "../api/userApi";
   import ChatWindow from "../components/ChatWindow";
+  import UserSearch from "../components/UserSearch";
+  import {
+  Search,
+  MessageSquare,
+  Users,
+  UserPlus,
+  Settings,
+  LogOut,
+  Lock,
+  Mail,
+  User,
+  MoreVertical,
+  Menu,
+  ChevronRight,
+  Hash,
+  PlusCircle,
+  Edit3,
+  Shield
+} from "lucide-react";
+
+
  
 
   export default function Dashboard() {
-    const { user } = useAuth(); // user ID from /users/me
+    const { user } = useAuth(); 
     const { stompClient, connected } = useWebSocket();
 
     const [users, setUsers] = useState([]);
@@ -21,7 +42,13 @@
     const [groupName, setGroupName] = useState("");
     
     
-    const [selectedUserIds, setSelectedUserIds] = useState([]); // Selected members for the group
+    const [selectedUserIds, setSelectedUserIds] = useState([]); 
+
+    // UI State
+  const [activeTab, setActiveTab] = useState("chats"); // 'chats', 'groups', 'contacts'
+  const [showSettings, setShowSettings] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showNewGroup, setShowNewGroup] = useState(false);
 
    
 
@@ -276,6 +303,27 @@
     }
   };
 
+  // handle submit for user search
+  const handleUserSelectFromSearch = async (selectedUser) => {
+  if (!currentUserId) return;
+
+  const existingConv = conversations.find(conv => {
+    if (!conv.group) {
+      return conv.participants.some(p => p.userId === selectedUser.id);
+    }
+    return false;
+  });
+
+  if (existingConv) {
+    setSelectedConversation(existingConv);
+    fetchMessages(existingConv.id);
+    return;
+  }
+
+  
+  await createPrivateConversation(selectedUser.id);
+};
+
 
     
 
@@ -302,7 +350,7 @@
           {/* Top bar */}
           <div className="p-4 border-b flex items-center space-x-3 bg-white">
             <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-              {currentUser?.firstName?.[0] || "U"}
+              {currentUser?.firstName?.[0]}
             </div>
             <div>
               <div className="font-bold text-lg">Bunna Chat</div>
@@ -311,6 +359,13 @@
               </div>
             </div>
           </div>
+          {/** user search  */}
+          <div className="p-4 border-b">
+              <UserSearch 
+                onUserSelect={(selectedUser) => { handleUserSelectFromSearch(selectedUser);
+                }}
+              />
+            </div>
 
           {/* Users list */}
           <div className="p-4 flex-1 overflow-y-auto space-y-4">
