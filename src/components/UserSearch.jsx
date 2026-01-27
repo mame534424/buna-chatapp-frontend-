@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { searchUsers } from "../api/userApi";
+import { Search } from "lucide-react";
 
 const UserSearch = ({ onUserSelect }) => {
   const [query, setQuery] = useState("");

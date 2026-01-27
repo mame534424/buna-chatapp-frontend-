@@ -1,6 +1,6 @@
   import React, { useEffect, useState } from "react";
   import API from "../utils/axiosInstance";
-  import { useAuth } from "../context/AuthContext";
+  import { useAuth} from "../context/AuthContext";
   import { useWebSocket } from "../context/WebSocketProvider";
   import { getAllUsers, getCurrentUser } from "../api/userApi";
   import ChatWindow from "../components/ChatWindow";
@@ -44,8 +44,8 @@
     
     const [selectedUserIds, setSelectedUserIds] = useState([]); 
 
-    // UI State
-  const [activeTab, setActiveTab] = useState("chats"); // 'chats', 'groups', 'contacts'
+    
+  const [activeTab, setActiveTab] = useState("chats"); 
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -85,10 +85,7 @@
     
     const currentUserId = currentUser?.id;
     console.log("Current User ID in Dashboard:", currentUserId);
-  // for testing purpose 
-    useEffect(() => {
-    console.log("MESSAGES UPDATED:", messages);
-  }, [messages]);
+ 
 
 
     /** Fetch conversations */
@@ -122,10 +119,7 @@
       messages.map((m) => m.createdAt)
     );
     console.log(messages);
-    // const sortedMessages = [...messages].sort(
-    //   (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-    // );
-    /** Mark messages as read */
+
     const markMessagesAsRead = async (msgs) => {
     if (!currentUserId) return;
     
@@ -188,46 +182,30 @@
       setMessageInput("");
     };
 
-    // Subscribe to WebSocket messages for real-time updates
+    
     useEffect(() => {
       if (!stompClient || !connected || !currentUserId) return;
 
       const subscription = stompClient.subscribe(
-        `/topic/users/${currentUserId}/conversations`, // Note: backend sends to this topic for conversation updates
+        `/topic/users/${currentUserId}/conversations`, 
         (msg) => {
           try {
             const message = JSON.parse(msg.body);
-
-            // If the message belongs to the selected conversation, append to chat window
             if (selectedConversation?.id === message.conversationId) {
               setMessages((prev) => [...prev, message]);
-              // update in real time for message read 
               if (message.senderId !== currentUserId) {
               API.post(`/messages/${message.id}/read?userId=${currentUserId}`);
             }
             }
 
-            // Update lastMessage in conversation list
-            // setConversations((prev) =>
-            //   prev.map((c) =>
-            //     c.id === message.conversationId
-            //       ? { ...c, lastMessage: message }
-            //       : c
-            //   )
-            // );
             setConversations((prev) => {
-            // 1. Check if we already have this conversation in our sidebar
             const exists = prev.find((c) => c.id === message.conversationId);
 
             if (exists) {
-              // 2. If it exists, just update the last message
               return prev.map((c) =>
                 c.id === message.conversationId ? { ...c, lastMessage: message } : c
               );
             } else {
-              // 3. IF IT IS NEW: We need the full conversation object.
-              // Ideally, the backend should send the conversation object with the message,
-              // or you can trigger a single one-time fetch here.
               fetchConversations();
               fetchUsers(); 
               return prev;
@@ -279,22 +257,13 @@
     if (!groupName || selectedUserIds.length === 0 || !currentUserId) return;
 
     try {
-      // Always include the admin (current user) at first index
       const participantIds = [currentUserId, ...selectedUserIds];
-
-      // Send request to backend
       const res = await API.post(
         `/conversations/group?groupName=${encodeURIComponent(groupName)}`,
         participantIds
       );
-
-      // Update conversations list immediately
       setConversations((prev) => [res.data.data, ...prev]);
-
-      // Set newly created group as selected
       setSelectedConversation(res.data.data);
-
-      // Reset inputs
       setMessages([]);
       setGroupName("");
       setSelectedUserIds([]);
@@ -303,7 +272,6 @@
     }
   };
 
-  // handle submit for user search
   const handleUserSelectFromSearch = async (selectedUser) => {
   if (!currentUserId) return;
 
@@ -323,170 +291,448 @@
   
   await createPrivateConversation(selectedUser.id);
 };
-
-
-    
-
-
-    /** Initial fetch of conversations */
-    useEffect(() => {
+  useEffect(() => {
       if (currentUserId) fetchConversations();
     }, [currentUserId]);
-  //   useEffect(() => {
-  //   if (!currentUserId) return;
-    
-  //   const interval = setInterval(() => {
-  //     fetchConversations();
-      
-  //   }, 5000);
-    
-  //   return () => clearInterval(interval);
-  // }, [currentUserId]);
-
+  
     return (
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="w-1/4 bg-gray-100 flex flex-col">
-          {/* Top bar */}
-          <div className="p-4 border-b flex items-center space-x-3 bg-white">
-            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-              {currentUser?.firstName?.[0]}
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-screen">
+        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold shadow-lg">
+              {currentUser?.firstName?.[0] || "B"}
             </div>
             <div>
-              <div className="font-bold text-lg">Bunna Chat</div>
-              <div className="text-sm text-gray-500">
-                {currentUser?.username || currentUser?.email || "You"}
-              </div>
+              <div className="font-bold text-lg text-amber-900">Bunna Chat</div>
+              
             </div>
           </div>
-          {/** user search  */}
-          <div className="p-4 border-b">
-              <UserSearch 
-                onUserSelect={(selectedUser) => { handleUserSelectFromSearch(selectedUser);
-                }}
-              />
-            </div>
-
-          {/* Users list */}
-          <div className="p-4 flex-1 overflow-y-auto space-y-4">
-            <h2 className="font-bold text-lg">Users</h2>
-            <div className="flex flex-col space-y-2">
-              {users
-                .filter((u) => u.id !== currentUser?.id)
-                .map((u) => (
-                  <button
-                    key={u.id}
-                    className="text-left p-2 bg-white rounded hover:bg-gray-200 flex items-center space-x-2"
-                    onClick={() => createPrivateConversation(u.id)}
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-semibold">
-                      {u.firstName?.[0] || "U"}
-                    </div>
-                    <div>{u.username || u.email || `User ${u.id}`}</div>
-                  </button>
-                ))}
-            </div>
-          </div>
-
-            {/* Conversations */}
-            <h2 className="font-bold text-lg mt-6">Conversations</h2>
-            <div className="flex flex-col space-y-2">
-              {conversations.map((c) => (
-                <button
-                  key={c.id}
-                  className={`text-left p-2 rounded hover:bg-gray-200 flex flex-col ${
-                    selectedConversation?.id === c.id ? "bg-gray-300" : "bg-white"
-                  }`}
-                  onClick={() => {
-                    setSelectedConversation(c);
-                    fetchMessages(c.id);
-                  }}
-                >
-                  <div className="font-medium">
-                    {c.group
-                      ? c.name
-                      : c.participants
-                          ?.filter((p) => p.userId !== currentUserId)
-                          .map((p) => p.username || p.email)
-                          .join(", ")}
-                  </div>
-                  {c.lastMessage && (
-                    <div className="text-sm text-gray-500 truncate">
-                      {c.lastMessage.content}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div> 
-
-            {/* Create Group */}
-            <div className="mt-6 p-4 border-t">
-              <h2 className="font-bold text-lg">Create Group</h2>
-              <input
-                type="text"
-                placeholder="Group Name"
-                className="w-full p-2 border rounded mt-2"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-              />
-
-              <div className="mt-2">
-                <span className="font-semibold">Select Users:</span>
-                <div className="flex flex-col max-h-48 overflow-y-auto mt-1 space-y-1">
-                  {users
-                    .filter((u) => u.id !== currentUserId) // Don't include admin
-                    .map((u) => (
-                      <label
-                        key={u.id}
-                        className="flex items-center space-x-2 p-1 border rounded hover:bg-gray-100"
-                      >
-                        <input
-                          type="checkbox"
-                          value={u.id}
-                          checked={selectedUserIds.includes(u.id)}
-                          onChange={(e) => {
-                            const userId = Number(e.target.value);
-                            if (e.target.checked) {
-                              setSelectedUserIds((prev) => [...prev, userId]);
-                            } else {
-                              setSelectedUserIds((prev) =>
-                                prev.filter((id) => id !== userId)
-                              );
-                            }
-                          }}
-                        />
-                        <span>{u.username || u.email}</span>
-                      </label>
-                    ))}
-                </div>
-              </div>
           
-
-              <button
-                className="w-full mt-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-                onClick={createGroupConversation}
-                disabled={!groupName || selectedUserIds.length === 0}
-              >
-                Create Group
-              </button>
-            </div>
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => setShowNewGroup(!showNewGroup)}
+              className="p-2 hover:bg-amber-50 rounded-full text-amber-700 transition-colors"
+              title="New Group"
+            >
+              <UserPlus size={20} />
+            </button>
+            <button 
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-2 hover:bg-amber-50 rounded-full text-amber-700 transition-colors"
+              title="Settings"
+            >
+              <Settings size={20} />
+            </button>
+          </div>
         </div>
 
+        
 
-        {/* Chat Window */}
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 px-3">
+          <button
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center space-x-2 ${
+              activeTab === "chats" 
+                ? "text-amber-700 border-b-2 border-amber-600" 
+                : "text-gray-500 hover:text-amber-600"
+            }`}
+            onClick={() => setActiveTab("chats")}
+          >
+            <MessageSquare size={18} />
+            <span>Chats</span>
+          </button>
+          <button
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center space-x-2 ${
+              activeTab === "groups" 
+                ? "text-amber-700 border-b-2 border-amber-600" 
+                : "text-gray-500 hover:text-amber-600"
+            }`}
+            onClick={() => setActiveTab("groups")}
+          >
+            <Users size={18} />
+            <span>Groups</span>
+          </button>
+          <button
+            className={`flex-1 py-3 text-sm font-medium flex items-center justify-center space-x-2 ${
+              activeTab === "contacts" 
+                ? "text-amber-700 border-b-2 border-amber-600" 
+                : "text-gray-500 hover:text-amber-600"
+            }`}
+            onClick={() => setActiveTab("contacts")}
+          >
+            <User size={18} />
+            <span>Contacts</span>
+          </button>
+        </div>
+
+        {/* Content Area based on Active Tab */}
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === "chats" && (
+            <div className="p-2">
+              {/* User Search for New Chats */}
+              <div className="mb-4">
+                <UserSearch 
+                  onUserSelect={(selectedUser) => handleUserSelectFromSearch(selectedUser)}
+                />
+              </div>
+
+              {/* Conversations List */}
+              <div className="space-y-1">
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Recent Conversations
+                </div>
+                {conversations.filter(c => !c.group).map((c) => (
+                  <div
+                    key={c.id}
+                    className={`flex items-center p-3 rounded-lg cursor-pointer transition-all ${
+                      selectedConversation?.id === c.id 
+                        ? "bg-amber-50 border-l-4 border-amber-500" 
+                        : "hover:bg-gray-50"
+                    }`}
+                    onClick={() => {
+                      setSelectedConversation(c);
+                      fetchMessages(c.id);
+                    }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold mr-3 shadow">
+                      {c.participants
+                        ?.filter(p => p.userId !== currentUserId)
+                        .map(p => p.firstName?.[0] || p.username?.[0] || "U")[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <h3 className="font-semibold text-gray-900 truncate">
+                          {c.participants
+                            ?.filter(p => p.userId !== currentUserId)
+                            .map(p => p.username || p.email)
+                            .join(", ")}
+                        </h3>
+                        <span className="text-xs text-gray-500">
+                          {c.lastMessage && new Date(c.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 truncate">
+                        {c.lastMessage?.content || "Start a conversation..."}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "groups" && (
+            <div className="p-2">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-gray-900">Your Groups</h3>
+                <button
+                  onClick={() => setShowNewGroup(true)}
+                  className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors flex items-center space-x-2"
+                >
+                  <PlusCircle size={16} />
+                  <span>New Group</span>
+                </button>
+              </div>
+
+              {/* Groups List */}
+              <div className="space-y-2">
+                {conversations.filter(c => c.group).map((c) => (
+                  <div
+                    key={c.id}
+                    className={`flex items-center p-3 rounded-lg cursor-pointer ${
+                      selectedConversation?.id === c.id 
+                        ? "bg-amber-50 border-l-4 border-amber-500" 
+                        : "hover:bg-gray-50"
+                    }`}
+                    onClick={() => {
+                      setSelectedConversation(c);
+                      fetchMessages(c.id);
+                    }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold mr-3 shadow">
+                      <Hash size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{c.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {c.lastMessage?.content || `${c.participants?.length || 0} members`}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "contacts" && (
+            <div className="p-2">
+              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                All Contacts
+              </div>
+              <div className="space-y-1">
+                {users
+                  .filter(u => u.id !== currentUser?.id)
+                  .map((u) => (
+                    <div
+                      key={u.id}
+                      className="flex items-center p-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                      onClick={() => createPrivateConversation(u.id)}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold mr-3">
+                        {u.firstName?.[0] || u.username?.[0] || "U"}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">
+                          {u.firstName} {u.lastName}
+                        </h3>
+                        <p className="text-sm text-gray-500">@{u.username || "user"}</p>
+                      </div>
+                      <ChevronRight size={16} className="text-gray-400" />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Profile Footer */}
+        <div 
+          className="p-3 border-t border-gray-200 hover:bg-gray-50 cursor-pointer"
+          onClick={() => setShowProfile(true)}
+        >
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold mr-3">
+              {currentUser?.firstName?.[0] || "U"}
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-gray-900">
+                {currentUser?.firstName} {currentUser?.lastName}
+              </h3>
+              <p className="text-sm text-gray-500">{currentUser?.email}</p>
+            </div>
+            <MoreVertical size={18} className="text-gray-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         <ChatWindow
-    selectedConversation={selectedConversation}
-    onParticipantsAdded={setSelectedConversation}
-    currentUserId={currentUserId}
-    messages={messages}
-    messageInput={messageInput}
-    setMessageInput={setMessageInput}
-    sendMessage={sendMessage}
-    messageReads={messageReads}
-    
-  />
+          selectedConversation={selectedConversation}
+          onParticipantsAdded={setSelectedConversation}
+          currentUserId={currentUserId}
+          messages={messages}
+          messageInput={messageInput}
+          setMessageInput={setMessageInput}
+          sendMessage={sendMessage}
+          messageReads={messageReads}
+        />
+      </div>
 
+      {/* Settings Panel (Right Sidebar) */}
+      {showSettings && (
+        <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-bold text-amber-900">Settings</h2>
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Account</h3>
+              <div className="space-y-3">
+                <button className="w-full flex items-center p-3 rounded-lg hover:bg-amber-50 text-left">
+                  <User size={18} className="text-amber-600 mr-3" />
+                  <div>
+                    <div className="font-medium text-gray-900">Edit Profile</div>
+                    <div className="text-sm text-gray-500">Update your personal information</div>
+                  </div>
+                </button>
+                <button className="w-full flex items-center p-3 rounded-lg hover:bg-amber-50 text-left">
+                  <Lock size={18} className="text-amber-600 mr-3" />
+                  <div>
+                    <div className="font-medium text-gray-900">Change Password</div>
+                    <div className="text-sm text-gray-500">Update your login password</div>
+                  </div>
+                </button>
+                <button className="w-full flex items-center p-3 rounded-lg hover:bg-amber-50 text-left">
+                  <Shield size={18} className="text-amber-600 mr-3" />
+                  <div>
+                    <div className="font-medium text-gray-900">Privacy & Security</div>
+                    <div className="text-sm text-gray-500">Manage your privacy settings</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Appearance</h3>
+              <div className="p-3 bg-amber-50 rounded-lg">
+                <div className="font-medium text-gray-900 mb-2">Theme</div>
+                <div className="flex space-x-2">
+                  <button className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm">Light</button>
+                  <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300">Dark</button>
+                  <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300">System</button>
+                </div>
+              </div>
+            </div>
+
+             
+          </div>
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-96 max-w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-amber-900">Your Profile</h2>
+                <button 
+                  onClick={() => setShowProfile(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+
+              <div className="text-center mb-6">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4 shadow-lg">
+                  {currentUser?.firstName?.[0] || "U"}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {currentUser?.firstName} {currentUser?.lastName}
+                </h3>
+                <p className="text-gray-500">{currentUser?.email}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <User size={16} className="text-amber-600 mr-2" />
+                    <span className="text-sm font-medium text-gray-700">Username</span>
+                  </div>
+                  <div className="font-medium">{currentUser?.username || "Not set"}</div>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <Mail size={16} className="text-amber-600 mr-2" />
+                    <span className="text-sm font-medium text-gray-700">Email</span>
+                  </div>
+                  <div className="font-medium">{currentUser?.email}</div>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <button className="w-full flex items-center justify-center p-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors">
+                  <Edit3 size={16} className="mr-2" />
+                  Edit Profile
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowProfile(false);
+                    setShowSettings(true);
+                  }}
+                  className="w-full flex items-center justify-center p-3 border border-amber-600 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                >
+                  <Settings size={16} className="mr-2" />
+                  Account Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Group Modal */}
+      {showNewGroup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-96 max-w-full">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-amber-900 mb-6">Create New Group</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Group Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter group name"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Add Members</label>
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {users
+                      .filter((u) => u.id !== currentUserId)
+                      .map((u) => (
+                        <label
+                          key={u.id}
+                          className="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            value={u.id}
+                            checked={selectedUserIds.includes(u.id)}
+                            onChange={(e) => {
+                              const userId = Number(e.target.value);
+                              if (e.target.checked) {
+                                setSelectedUserIds((prev) => [...prev, userId]);
+                              } else {
+                                setSelectedUserIds((prev) =>
+                                  prev.filter((id) => id !== userId)
+                                );
+                              }
+                            }}
+                            className="mr-3"
+                          />
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold mr-3">
+                            {u.firstName?.[0] || "U"}
+                          </div>
+                          <div>
+                            <div className="font-medium">{u.firstName} {u.lastName}</div>
+                            <div className="text-sm text-gray-500">@{u.username}</div>
+                          </div>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={() => setShowNewGroup(false)}
+                    className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      createGroupConversation();
+                      setShowNewGroup(false);
+                    }}
+                    disabled={!groupName || selectedUserIds.length === 0}
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg hover:from-amber-700 hover:to-amber-800 disabled:opacity-50"
+                  >
+                    Create Group
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-      
-    );
-  } 
+  );
+}

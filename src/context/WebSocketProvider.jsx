@@ -18,20 +18,17 @@ export const WebSocketProvider = ({ children }) => {
       brokerURL: null,
       webSocketFactory: () => new SockJS("http://localhost:8080/ws-sockjs"),
       connectHeaders: {
-        Authorization: `Bearer ${token}`, // send token
+        Authorization: `Bearer ${token}`, 
       },
       debug: (str) => console.log("[STOMP]", str),
       reconnectDelay: 5000,
     });
 
     client.onConnect = async () => {
-      console.log("✅ STOMP connected");
+      console.log("STOMP connected");
 
-      // fetch user info using existing /users/me API
       const res = await API.get("/users/me");
-      setUserId(res.data); // res.data = 1 (your userId)
-
-      // subscribe to conversations for this user
+      setUserId(res.data); 
       client.subscribe(`/user/${res.data}/queue/conversations`, (message) => {
         console.log("Conversations:", JSON.parse(message.body));
       });

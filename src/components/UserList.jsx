@@ -3,7 +3,6 @@ import API from "../api/axiosInstance";
 const UserList = ({ users, setSelectedConversation }) => {
   const handlePrivateChat = async (userId) => {
     try {
-      // user1Id = current user (from backend token)
       const res = await API.post(`/conversations/private?user1Id=${localStorage.getItem("userId")}&user2Id=${userId}`);
       setSelectedConversation(res.data.data);
     } catch (err) {
