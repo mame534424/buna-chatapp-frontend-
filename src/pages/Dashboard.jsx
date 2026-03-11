@@ -5,6 +5,7 @@
   import { getAllUsers, getCurrentUser } from "../api/userApi";
   import ChatWindow from "../components/ChatWindow";
   import UserSearch from "../components/UserSearch";
+  import AvatarUploader from "../features/components/AvatarUploader";
   import {
   Search,
   MessageSquare,
@@ -23,11 +24,13 @@
   Edit3,
   Shield
 } from "lucide-react";
+import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
 
 
  
 
   export default function Dashboard() {
+    
     const { user } = useAuth(); 
     const { stompClient, connected } = useWebSocket();
 
@@ -49,6 +52,7 @@
   const [showSettings, setShowSettings] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
    
 
@@ -85,9 +89,10 @@
     
     const currentUserId = currentUser?.id;
     console.log("Current User ID in Dashboard:", currentUserId);
- 
+    
 
-
+    const {previewUrl,avatarUrl}=useAvatarUpload(currentUserId);
+    
     /** Fetch conversations */
     const fetchConversations = async () => {
       if (!currentUserId) return;
@@ -301,13 +306,37 @@
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-screen">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold shadow-lg">
-              {currentUser?.firstName?.[0] || "B"}
-            </div>
-            <div>
-              <div className="font-bold text-lg text-amber-900">Bunna Chat</div>
-              
-            </div>
+
+              {/* Avatar Container */}
+              <div className="relative w-12 h-12 rounded-full overflow-hidden 
+                  ring-2 ring-amber-600 shadow-md 
+                  hover:ring-amber-700 transition-all duration-200">
+
+                {avatarUrl || previewUrl ? (
+                  <img
+                    src={avatarUrl || previewUrl}
+                    alt="Profile avatar"
+                    className="w-full h-full object-cover" />
+                    ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-amber-600 to-amber-800 
+                      flex items-center justify-center text-white font-bold text-sm">
+                      {(currentUser?.firstName?.charAt(0)?.toUpperCase() || "B")}
+                    </div>
+                     )}
+
+              </div>
+
+              {/* Name Section */}
+              <div className="flex flex-col">
+                <div className="font-semibold text-amber-900 text-lg leading-none">
+                  Bunna Chat
+                </div>
+
+                <span className="text-xs text-gray-500">
+                  Online
+                </span>
+              </div>
+
           </div>
           
           <div className="flex items-center space-x-3">
@@ -548,7 +577,11 @@
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Account</h3>
               <div className="space-y-3">
-                <button className="w-full flex items-center p-3 rounded-lg hover:bg-amber-50 text-left">
+                <button 
+                onClick={
+                  () => setShowProfile(true)
+                }
+                className="w-full flex items-center p-3 rounded-lg hover:bg-amber-50 text-left">
                   <User size={18} className="text-amber-600 mr-3" />
                   <div>
                     <div className="font-medium text-gray-900">Edit Profile</div>
@@ -590,68 +623,125 @@
       )}
 
       {/* Profile Modal */}
-      {showProfile && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-96 max-w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-amber-900">Your Profile</h2>
-                <button 
-                  onClick={() => setShowProfile(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-
-              <div className="text-center mb-6">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4 shadow-lg">
-                  {currentUser?.firstName?.[0] || "U"}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {currentUser?.firstName} {currentUser?.lastName}
-                </h3>
-                <p className="text-gray-500">{currentUser?.email}</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <User size={16} className="text-amber-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-700">Username</span>
+        {showProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div
+              className={`flex items-start transition-all duration-300 ${
+                showEditProfile ? "gap-20" : ""
+              }`}
+            >
+              {/* Main Profile Card */}
+              <div className="bg-white rounded-2xl w-96 max-w-full shadow-xl">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold text-amber-900">Your Profile</h2>
+                    <button
+                      onClick={() => {
+                        setShowProfile(false);
+                        setShowEditProfile(false);
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-full"
+                    >
+                      <ChevronRight size={20} />
+                    </button>
                   </div>
-                  <div className="font-medium">{currentUser?.username || "Not set"}</div>
-                </div>
 
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center mb-2">
-                    <Mail size={16} className="text-amber-600 mr-2" />
-                    <span className="text-sm font-medium text-gray-700">Email</span>
+                  <div className="text-center mb-6">
+                    <div
+                      className="relative w-20 h-20 rounded-full overflow-hidden 
+                                ring-2 ring-amber-600 shadow-md 
+                                hover:ring-amber-700 transition-all duration-200 mx-auto"
+                    >
+                      {avatarUrl || previewUrl ? (
+                        <img
+                          src={avatarUrl || previewUrl}
+                          alt="Profile avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full bg-gradient-to-br from-amber-600 to-amber-800 
+                                    flex items-center justify-center text-white font-bold text-xl"
+                        >
+                          {currentUser?.firstName?.charAt(0)?.toUpperCase() || "B"}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col mt-3">
+                      <div className="font-semibold text-amber-900 text-lg leading-none">
+                        Bunna Chat
+                      </div>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-gray-900 mt-4">
+                      {currentUser?.firstName} {currentUser?.lastName}
+                    </h3>
+                    <p className="text-gray-500">{currentUser?.email}</p>
                   </div>
-                  <div className="font-medium">{currentUser?.email}</div>
+
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <User size={16} className="text-amber-600 mr-2" />
+                        <span className="text-sm font-medium text-gray-700">Username</span>
+                      </div>
+                      <div className="font-medium">{currentUser?.userName || "Not set"}</div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <Mail size={16} className="text-amber-600 mr-2" />
+                        <span className="text-sm font-medium text-gray-700">Email</span>
+                      </div>
+                      <div className="font-medium">{currentUser?.email}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 space-y-3">
+                    <button
+                      onClick={() => setShowEditProfile(true)}
+                      className="w-full flex items-center justify-center p-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors"
+                    >
+                      <Edit3 size={16} className="mr-2" />
+                      Edit Profile
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowProfile(false);
+                        setShowSettings(true);
+                        setShowEditProfile(false);
+                      }}
+                      className="w-full flex items-center justify-center p-3 border border-amber-600 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
+                    >
+                      <Settings size={16} className="mr-2" />
+                      Account Settings
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 space-y-3">
-                <button className="w-full flex items-center justify-center p-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors">
-                  <Edit3 size={16} className="mr-2" />
-                  Edit Profile
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowProfile(false);
-                    setShowSettings(true);
-                  }}
-                  className="w-full flex items-center justify-center p-3 border border-amber-600 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
-                >
-                  <Settings size={16} className="mr-2" />
-                  Account Settings
-                </button>
-              </div>
+              {/* Separate Edit Profile Card */}
+              {showEditProfile && (
+                <div className="bg-white rounded-2xl w-96 max-w-full shadow-xl p-6">
+                  <h3 className="text-lg font-bold text-amber-900 mb-4">Edit Profile</h3>
+
+                  <AvatarUploader userId={currentUser?.id} />
+
+                  <button
+                    onClick={() => setShowEditProfile(false)}
+                    className=" mt-4 w-full  p-3 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      { /* Edit Profile Section */}
+        
 
       {/* New Group Modal */}
       {showNewGroup && (
