@@ -1,4 +1,4 @@
-  import React, { useEffect, useState } from "react";
+  import React, { useEffect, useState,useRef } from "react";
   import API from "../utils/axiosInstance";
   import { useAuth} from "../context/AuthContext";
   import { useWebSocket } from "../context/WebSocketProvider";
@@ -6,6 +6,7 @@
   import ChatWindow from "../components/ChatWindow";
   import UserSearch from "../components/UserSearch";
   import AvatarUploader from "../features/components/AvatarUploader";
+  import { getAvatarViewUrl } from "../features/api/avatarApi";
   import {
   Search,
   MessageSquare,
@@ -25,6 +26,7 @@
   Shield
 } from "lucide-react";
 import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
+import { uploadAndSendFile } from "../api/uploadAndSendFile";
 
 
  
@@ -53,6 +55,11 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
   const [showProfile, setShowProfile] = useState(false);
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const [avatarUrls, setAvatarUrls] = useState({});
 
    
 
@@ -84,9 +91,6 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
       };
       fetchCurrentUser();
     }, []);
-
-    
-    
     const currentUserId = currentUser?.id;
     console.log("Current User ID in Dashboard:", currentUserId);
     
@@ -104,6 +108,44 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
       }
     };
     console.log("Conversations:", conversations);
+
+    // fetch the users avatar url based on their id
+
+    useEffect(() => {
+      async function loadConversationAvatars() {
+      if (!conversations || !conversations.length) return;
+
+      const urls = {};
+      console.log("i am in ")
+
+      for (const c of conversations) {
+      const otherParticipant = c.participants?.find(
+        (p) => p.userId !== currentUserId
+      );
+
+      if (otherParticipant?.userId && otherParticipant?.avatarPath) {
+        try {
+          const viewUrl = await getAvatarViewUrl(otherParticipant.userId);
+          console.log(`Avatar URL for user ${otherParticipant.userId}:`, viewUrl);
+          if (viewUrl) {
+            urls[otherParticipant.userId] = viewUrl;
+          }
+        } catch (err) {
+          console.error(
+            `Failed to load avatar for user ${otherParticipant.userId}`,
+            err
+          );
+        }
+      }
+    }
+
+    setAvatarUrls(urls);
+  }
+
+  loadConversationAvatars();
+}, [conversations, currentUserId]);
+console.log("Avatar URLs:", avatarUrls);
+    
 
     /** Fetch messages */
   const fetchMessages = async (convId) => {
@@ -165,26 +207,49 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
 
 
     /** Send message */
-    const sendMessage = () => {
-      if (
-        !messageInput.trim() ||
-        !selectedConversation ||
-        !stompClient?.connected
-      )
-        return;
+    const sendMessage = async () => {
+      if (!selectedConversation) return;
 
-      const payload = {
-        conversationId: selectedConversation.id,
-        senderId: currentUserId,
-        text: messageInput.trim(),
-      };
-
-      stompClient.publish({
+      try {
+        // case 1 for file message 
+        if(selectedFile){
+          await uploadAndSendFile({
+            file: selectedFile,
+            conversationId: selectedConversation.id,
+            senderId: currentUserId,
+            content: messageInput.trim()
+          });
+          setMessageInput("");
+          setSelectedFile(null);
+          if(fileInputRef.current){
+            fileInputRef.current.value="";
+          }
+          return;
+        }
+        // case 2 for text message only
+        if (!messageInput.trim() || !stompClient?.connected) return;
+         const payload = {
+            conversationId: selectedConversation.id,
+            senderId: currentUserId,
+            text: messageInput.trim(),
+          };
+        stompClient.publish({
         destination: "/app/chat.sendMessage",
         body: JSON.stringify(payload),
       });
 
       setMessageInput("");
+
+
+
+        
+      } catch (err) {
+        console.error("Failed to send message:", err);
+      }
+
+     
+
+      
     };
 
     
@@ -312,7 +377,7 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
                   ring-2 ring-amber-600 shadow-md 
                   hover:ring-amber-700 transition-all duration-200">
 
-                {avatarUrl || previewUrl ? (
+                {avatarUrl? (
                   <img
                     src={avatarUrl || previewUrl}
                     alt="Profile avatar"
@@ -412,7 +477,20 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
                 <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Recent Conversations
                 </div>
-                {conversations.filter(c => !c.group).map((c) => (
+                {[...conversations]
+                    .filter(c => !c.group)
+                    .sort((a, b) => {
+                      const timeA = a.lastMessage?.createdAt
+                        ? new Date(a.lastMessage.createdAt).getTime()
+                        : 0;
+
+                      const timeB = b.lastMessage?.createdAt
+                        ? new Date(b.lastMessage.createdAt).getTime()
+                        : 0;
+
+                      return timeB - timeA;
+                    })
+                    .map((c) => (
                   <div
                     key={c.id}
                     className={`flex items-center p-3 rounded-lg cursor-pointer transition-all ${
@@ -425,11 +503,27 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
                       fetchMessages(c.id);
                     }}
                   >
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold mr-3 shadow">
-                      {c.participants
-                        ?.filter(p => p.userId !== currentUserId)
-                        .map(p => p.firstName?.[0] || p.username?.[0] || "U")[0]}
-                    </div>
+                    {
+                      (() => {
+                              const otherParticipant = c.participants?.find(
+                                (p) => p.userId !== currentUserId
+                              );
+
+                              const avatarUrl = avatarUrls[otherParticipant?.userId];
+
+                              return avatarUrl ? (
+                                <img
+                                  src={avatarUrl}
+                                  alt={otherParticipant?.firstName || otherParticipant?.username || "User"}
+                                  className="w-12 h-12 rounded-full object-cover mr-3 shadow"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold mr-3 shadow">
+                                  {otherParticipant?.firstName?.[0] || otherParticipant?.username?.[0] || "U"}
+                                </div>
+                              );
+                      })()
+                    }
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-center mb-1">
                         <h3 className="font-semibold text-gray-900 truncate">
@@ -557,6 +651,11 @@ import { useAvatarUpload } from "../features/hooks/useAvatarUpload";
           setMessageInput={setMessageInput}
           sendMessage={sendMessage}
           messageReads={messageReads}
+          setSelectedFile={setSelectedFile}
+          fileInputRef={fileInputRef}
+          selectedFile={selectedFile}
+          avatarUrls={avatarUrls}
+          
         />
       </div>
 
