@@ -368,7 +368,7 @@ console.log("Avatar URLs:", avatarUrls);
     return (
       <div className="flex h-screen bg-gray-50 overflow-hidden">
       
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-screen">
+      <div className={`${selectedConversation ?" hidden lg:flex" : "flex"} w-full lg:w-100 bg-white border-r border-gray-200  flex-col h-screen`}>
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white flex-shrink-0">
           <div className="flex items-center space-x-3">
 
@@ -641,7 +641,8 @@ console.log("Avatar URLs:", avatarUrls);
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`${
+    selectedConversation ? "flex" : "hidden lg:flex"} flex-col flex-1 overflow-hidden`}>
         <ChatWindow
           selectedConversation={selectedConversation}
           onParticipantsAdded={setSelectedConversation}
@@ -655,6 +656,7 @@ console.log("Avatar URLs:", avatarUrls);
           fileInputRef={fileInputRef}
           selectedFile={selectedFile}
           avatarUrls={avatarUrls}
+          onBackToSidebar={() => setSelectedConversation(null)}
           
         />
       </div>
