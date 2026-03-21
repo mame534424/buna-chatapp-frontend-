@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useState, useRef, useEffect } from "react";
-import { Coffee, Send, Plus, UserPlus} from "lucide-react";
+import { Coffee, Send, Plus, UserPlus,ArrowLeft} from "lucide-react";
 import AddParticipantsModal from "../components/AddParticipantsModal";
 import { MessageBubble } from "../features/components/messageBubble";
 import SelectedFilePreview from "../features/components/SelectedFilePreview";
@@ -19,7 +19,8 @@ export default function ChatWindow({
     setSelectedFile,
     fileInputRef,
     selectedFile,
-    avatarUrls
+    avatarUrls,
+    onBackToSidebar
 }) {
   const [open, setOpen] = useState(false);
   const messagesEndRef = useRef(null);
@@ -141,8 +142,15 @@ export default function ChatWindow({
  return (
     <div className="flex-1 flex flex-col bg-white overflow-hidden relative">
       <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-3">
-                    {chatAvatarUrl ? (
+         <div className="flex items-center space-x-3">
+          <button
+            onClick={onBackToSidebar}
+            className="lg:hidden mr-2 pr-2 rounded-full hover:bg-gray-100"
+          >
+            <ArrowLeft size={22} />
+          </button>
+
+          {chatAvatarUrl ? (
             <img
               src={chatAvatarUrl}
               alt="User"
@@ -161,7 +169,7 @@ export default function ChatWindow({
                 : selectedConversation?.participants
                     ?.find((p) => p.userId !== currentUserId)
                     ?.username?.[0]?.toUpperCase() || "U"}
-            </div>
+              </div>
           )}
 
           <div>

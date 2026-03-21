@@ -368,7 +368,7 @@ console.log("Avatar URLs:", avatarUrls);
     return (
       <div className="flex h-screen bg-gray-50 overflow-hidden">
       
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-screen">
+      <div className={`${selectedConversation ?" hidden lg:flex" : "flex"} w-full lg:w-100 bg-white border-r border-gray-200  flex-col h-screen`}>
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-white flex-shrink-0">
           <div className="flex items-center space-x-3">
 
@@ -641,7 +641,8 @@ console.log("Avatar URLs:", avatarUrls);
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`${
+    selectedConversation ? "flex" : "hidden lg:flex"} flex-col flex-1 overflow-hidden`}>
         <ChatWindow
           selectedConversation={selectedConversation}
           onParticipantsAdded={setSelectedConversation}
@@ -655,15 +656,16 @@ console.log("Avatar URLs:", avatarUrls);
           fileInputRef={fileInputRef}
           selectedFile={selectedFile}
           avatarUrls={avatarUrls}
+          onBackToSidebar={() => setSelectedConversation(null)}
           
         />
       </div>
 
       {/* Settings Panel (Right Sidebar) */}
       {showSettings && (
-        <div className="w-80 bg-white border-l border-gray-200 p-6 overflow-y-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-amber-900">Settings</h2>
+        <div className="fixed inset-0 z-50 bg-white p-4 overfolw-y-auto lg:static lg:w-80 lg:border-l lg:border-gray-200 lg:p-6 ">
+          <div className="flex items-center justify-between mb-6 lg:mb-8">
+            <h2 className="text-lg lg:text-xl font-bold text-amber-900">Settings</h2>
             <button 
               onClick={() => setShowSettings(false)}
               className="p-2 hover:bg-gray-100 rounded-full"
@@ -722,18 +724,20 @@ console.log("Avatar URLs:", avatarUrls);
       )}
 
       {/* Profile Modal */}
-        {showProfile && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div
-              className={`flex items-start transition-all duration-300 ${
-                showEditProfile ? "gap-20" : ""
-              }`}
-            >
-              {/* Main Profile Card */}
-              <div className="bg-white rounded-2xl w-96 max-w-full shadow-xl">
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold text-amber-900">Your Profile</h2>
+{showProfile && (
+  <div className="fixed inset-0 z-50 bg-black/50 flex items-start lg:items-center justify-center px-3 py-4 sm:px-4 sm:py-6 overflow-y-auto">
+    <div
+      className={`flex flex-col lg:flex-row items-stretch w-full max-w-4xl transition-all duration-300 ${
+        showEditProfile ? "gap-4 lg:gap-6" : ""
+      }`}
+    >
+            {/* Main Profile Card */}
+              <div className="bg-white rounded-2xl w-full max-w-md shadow-xl flex flex-col min-h-full">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-amber-900">
+                      Your Profile
+                    </h2>
                     <button
                       onClick={() => {
                         setShowProfile(false);
@@ -745,9 +749,9 @@ console.log("Avatar URLs:", avatarUrls);
                     </button>
                   </div>
 
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-4 sm:mb-6">
                     <div
-                      className="relative w-20 h-20 rounded-full overflow-hidden 
+                      className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden 
                                 ring-2 ring-amber-600 shadow-md 
                                 hover:ring-amber-700 transition-all duration-200 mx-auto"
                     >
@@ -773,31 +777,37 @@ console.log("Avatar URLs:", avatarUrls);
                       </div>
                     </div>
 
-                    <h3 className="text-xl font-bold text-gray-900 mt-4">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mt-3 sm:mt-4">
                       {currentUser?.firstName} {currentUser?.lastName}
                     </h3>
-                    <p className="text-gray-500">{currentUser?.email}</p>
+                    <p className="text-gray-500 break-words">{currentUser?.email}</p>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center mb-2">
                         <User size={16} className="text-amber-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-700">Username</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          Username
+                        </span>
                       </div>
-                      <div className="font-medium">{currentUser?.userName || "Not set"}</div>
+                      <div className="font-medium break-words">
+                        {currentUser?.userName || "Not set"}
+                      </div>
                     </div>
 
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center mb-2">
                         <Mail size={16} className="text-amber-600 mr-2" />
-                        <span className="text-sm font-medium text-gray-700">Email</span>
+                        <span className="text-sm font-medium text-gray-700">
+                          Email
+                        </span>
                       </div>
-                      <div className="font-medium">{currentUser?.email}</div>
+                      <div className="font-medium break-words">{currentUser?.email}</div>
                     </div>
                   </div>
 
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-4 sm:mt-6 space-y-3">
                     <button
                       onClick={() => setShowEditProfile(true)}
                       className="w-full flex items-center justify-center p-3 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors"
@@ -823,17 +833,21 @@ console.log("Avatar URLs:", avatarUrls);
 
               {/* Separate Edit Profile Card */}
               {showEditProfile && (
-                <div className="bg-white rounded-2xl w-96 max-w-full shadow-xl p-6">
-                  <h3 className="text-lg font-bold text-amber-900 mb-4">Edit Profile</h3>
+                <div className="bg-white rounded-2xl w-full max-w-md shadow-xl flex flex-col min-h-full">
+                  <div className="p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-amber-900 mb-4">
+                      Edit Profile
+                    </h3>
 
-                  <AvatarUploader userId={currentUser?.id} />
+                    <AvatarUploader userId={currentUser?.id} />
 
-                  <button
-                    onClick={() => setShowEditProfile(false)}
-                    className=" mt-4 w-full  p-3 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors"
-                  >
-                    Close
-                  </button>
+                    <button
+                      onClick={() => setShowEditProfile(false)}
+                      className="mt-4 w-full p-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
