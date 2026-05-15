@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)" rx="12"/>
+  <g fill="#fff" font-family="Arial, Helvetica, sans-serif">
+    <circle cx="120" cy="225" r="80" fill="rgba(255,255,255,0.08)" />
+    <polygon points="110,185 190,225 110,265" fill="#fff"/>
+    <text x="260" y="240" font-size="40" font-weight="700">Watch Demo</text>
+    <text x="260" y="285" font-size="18" opacity="0.9">Click to open Loom video</text>
+  </g>
+</svg>
