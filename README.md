@@ -90,8 +90,5 @@ Please read the contributing guidelines in the backend repo and open issues or P
 
 **License**
 
-This project is provided under the [MIT License](LICENSE) unless otherwise noted.
+No license
 
----
-
-If you want, I can: (1) add a real demo embed, (2) link the exact backend repo URL, or (3) add a CONTRIBUTING.md. Which would you like next?
